@@ -1,0 +1,138 @@
+zookeeper
+
+1.什么是zookeeper
+	ZooKeeper是一个分布式协调技术、高性能的，开源的分布式系统的协调(Coordination)服务，是Google的Chubby一个开源的实现，是Hadoop和Hbase的重要组件。它是一个为分布式应用程序一致性和分布式协调技术服务的软件。
+	
+	举个例子：一个写字楼里，写字楼中的公司索引牌和管理写字楼的物业就组成了类似于zookeeper的架构。写字楼的物业和各个注册公司之间的关系，物业负责及时通知这些公司关于科技园中的一些相关事宜，比如要停电了、停水了，这些公司接到通知可以及时作出应对措施。   
+	
+2.zookeeper=类似unix文件系统+通知机制+Znode节点
+
+3.作用：服务注册+分布式系统的一致性通知协调
+
+4.zookeeper的安装
+	
+	-1.将压缩包上传到 opt下 并解压缩
+	-2.在根目录下新建 myzookeeper文件夹
+	-3.递归复制zookeeper文件夹 到 myzookeeper文件夹
+	-4.进入到conf文件夹下 cd /myzookeeper/zookeeper-3.4.11/conf
+	-5.复制一份zoo_sample.cfg  重命名为zoo.cfg
+	     cp zoo_sample.cfg zoo.cfg
+	
+5.zookeeper的启动
+
+	-进入bin文件下启动服务：./zkServer.sh start
+	-启动客户端连接 ./zkCli.sh
+	
+6.Znode节点：维护了一个Stat的结构体 
+	
+	Znode = path + data + Stat
+	
+	stat结构体：
+	
+	-czxid    引起这个znode创建的zxid，创建节点的事务的zxid（ZooKeeper Transaction Id）
+	-ctime       znode被创建的毫秒数(从1970年开始)
+	-mzxid       znode最后更新的zxid
+	-mtime       znode最后修改的毫秒数(从1970年开始)
+	-pZxid       znode最后更新的子节点zxid
+	-cversion 	 znode子节点变化号，znode子节点修改次数
+	-dataversion znode数据变化号
+	-aclVersion  znode访问控制列表的变化号 权限
+	-ephemeralOwner  
+	如果是临时节点，这个是znode拥有者的session id。如果不是临时节点则是0。
+	
+	-dataLength  znode的数据长度
+	-numChildren znode子节点数量
+	
+	Znode中的存在类型
+	-PERSISTENT-持久化目录节点（默认类型）
+	-PERSISTENT_SEQUENTIAL-持久化顺序编号目录节点
+	-EPHEMERAL-临时目录节点
+	-EPHEMERAL_SEQUENTIAL-临时顺序编号目录节点
+	
+	
+7.常用命令
+	-基础命令
+		--ls     查看当前znode中所包含的内容
+		--ls2    查看当前节点数据并能看到更新次数等数据
+		--create 
+			---普通创建
+			---含有序列 -s
+			---临时 -e
+			---临时且含有序列 -s -e
+			
+		--set    设置节点的具体值
+		--get	 获得节点的值
+		--stat   查看节点状态
+		--delete 删除无子节点的目录
+		--rmr    递归删除（慎用）
+	
+	-四字命令（只需记住一个）
+		--echo ruok | nc 127.0.0.1 2181
+		ruok：测试服务是否处于正确状态。如果确实如此，那么服务返回“imok ”，否则不做任何相应，未连接上
+
+8.通知机制
+
+	-什么是通知机制
+		客户端注册监听它关心的目录节点,当目录节点发生变化（数据改变、被删除、子目录节点增加删除）时，zookeeper会通知客户端。
+	
+	-观察者的功能
+		客户端可以在每个znode结点上设置一个观察。如果被观察服务端的znode结点有变更，那么watch就会被触发，这个watch所属的客户端将接收到一个通知包被告知结点已经发生变化。
+		
+	-异步回调触发机制
+		客户端调用watch不会一直等待watch返回结果，当watch有结果返回给客户端时watch将回调客户端
+	
+	-对watch事件的理解
+		--一次性通知
+		--发往客户端
+			在客户端看到观察事件之前，是不会得到修改后的变化的，保证了客户端的一致性
+		
+		--为数据设置watch
+			所有的读操作将能够设置watch
+			所有的写操作可以触发watch事件
+			
+		--时序性和一致性
+			不同的客户端是按一定顺序收到通知的
+			客户端在看到新数据之前先看到watch事件
+
+9.zookeeper集群搭建（至少三台）
+
+	zookeeper集群和redis集群的区别
+	
+	redis集群是读写分离的，因为redis存储的数据多是来自与前端用户相关，读写分离可以缓解高访问量，高并发的压力。
+	zookeeper集群每台机器兼具读写功能，zookeeper用于后台协调通知管理分布式架构，在后台不存在高访问量，高并发，zookeeper集群主要是为了提高抗风险能力
+	
+	搭建过程：
+	1）在myzookeeper文件下迭代复制已经搭建好的zookeeper文件，重新命名为zk01
+	2）在zk01下新建文件夹mydata、mylog分别存放数据和日志；在mydata文件夹下新建myid文件，在文件中添加服务器的编号，这里zk01的就规定为“1”
+	3）修改zk01/conf下的配置文件zoo.cnf，修改内容有：
+		-设置自己的存放数据和log的路径
+		dataDir=/myzookeeper/zk01/mydata
+		dataLogDir=/myzookeeper/zk01/mylog
+		-修改clientPort 改为2191
+		-在最后面添加集群信息
+			格式为server.N=YYY:A:B
+			--N表示服务器编号
+			--YYY表示服务器的IP地址，
+			--A为LF通信端口，表示该服务器与集群中的leader交换的信息的端口。
+			--B为选举端口，表示选举新leader时服务器间相互通信的端口（当leader挂掉时，其余服务器会相互通信，选择出新的leader）
+			理论上通信端口和选举端口都是一样的，但在模拟集群时，由于是在一台机器上，ip地址都一样，因此需要LF通信端口和选取端口都不一样。
+
+	4）迭代复制zk01两份，重命名为zk02和zk03
+	5）zk02和zk03需要修改的地方有:
+		-配置文件zoo.cnf
+			dataDir=/myzookeeper/zk01/mydata
+		    dataLogDir=/myzookeeper/zk01/mylog
+			都改为zk02和zk03对应的位置
+			lientPort 改为2192,2193
+		-myid文件
+			zk02改为2、zk03改为3
+			
+	6）分别启动zk01、zk02、zk03的zookeeper 服务
+		./zkServer.sh start
+	7）分别启动zk01、zk02、zk03的客户端连接
+		./zkCli.sh -server 127.0.0.1:clientPort
+	8）2191/2192/2193任意用客户端链接一台，会发现只需要有一个改变了，整个集群的内容自动一致性同步。
+	
+	
+	
+	

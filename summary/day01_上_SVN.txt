@@ -1,0 +1,30 @@
+SVN--版本控制工具
+
+解决项目实际开发中的需求问题
+
+第一次上传--checkin（检入）
+第一次下载--checkout（检出）
+之后再次上传--commit
+之后再次提交--update
+
+文件夹缩写
+BI--经营分析系统
+CRM--客户关系管理
+OA--自动化办公系统
+
+svn服务注册到windows服务
+
+sc create MySVNService binpath= "E:\developer_tools\Subversion\bin\svnserve.exe --service -r E:\developer_tools\SVNRepository" start= auto d
+epend= Tcpip
+
+SVN 修改权限
+
+.conf文件下  修改配置为anon-access = write此为匿名权限
+
+1.注释掉匿名权限访问，打开权限访问模式：auth-access = write
+2.指定对应的用户名和密码配置信息位置 password-db = passwd
+3.指定对应的权限信息位置 authz-db = authz
+4.在passwd文件中添加用户名和密码
+5.在authz文件中将用户分配到对应的组中，并为每个组分配相应权限，为不确定的角色指明通配符表示不分配任何权限
+
+会使用TortoiseSVN客户端

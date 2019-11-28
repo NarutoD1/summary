@@ -1,0 +1,269 @@
+mysql中SQL语句必须以分号为结束标志的是标准sql语句
+不用加分号的是mysql的语句
+
+
+1.CentOS7上 mysql5.7的安装--对比与mysql5.5安装的区别
+
+	-1.拷贝&解压缩
+		需要的压缩包变为4个，按照安装顺序依次是：
+		mysql-community-common-5.7.16-1.el7.x86_64.rpm
+		mysql-community-libs-5.7.16-1.el7.x86_64.rpm
+		mysql-community-client-5.7.16-1.el7.x86_64.rpm
+		mysql-community-server-5.7.16-1.el7.x86_64.rpm
+
+	-2.检查当前系统是否安装过mysql	
+		rpm -qa|grep mariadb
+		若存在mariadb-libs-5.5.56-2.el7.x86_64先卸载
+		rpm -e --nodeps  mariadb-libs
+		再查询一下，卸载成功没有
+		rpm -qa|grep mariadb
+		
+	-3.检查当前mysql依赖环境
+		rpm -qa|grep libaio 查看是否存在以下环境
+		libaio-0.3.109-13.el7.x86_64
+		rpm -qa|grep net-tools 查看是否存在以下环境
+		net-tools-2.0-0.22.20131004git.el7.x86_64
+		
+		如果不存在需要到centos安装盘里进行rpm安装
+	
+	-4.检查/tmp文件夹权限
+		由于mysql安装过程中，会通过mysql用户在/tmp目录下新建tmp_db文件，所以请给/tmp较大的权限
+		执行 ：chmod -R 777 /tmp
+		
+	-5.安装，严格按照如下安装顺序执行
+		rpm -ivh mysql-community-common-5.7.16-1.el7.x86_64.rpm 
+		rpm -ivh mysql-community-libs-5.7.16-1.el7.x86_64.rpm
+		rpm -ivh mysql-community-client-5.7.16-1.el7.x86_64.rpm 
+		rpm -ivh mysql-community-server-5.7.16-1.el7.x86_64.rpm
+		
+	-6.查看安装是否成功
+		mysqladmin --version
+		
+2.手动初始化mysql服务（5.5是自动初始化的）
+	-1.mysqld --initialize --user=mysql
+	
+	-2.--initialize 选项默认以“安全”模式来初始化，则会为 root 用户生成一个密码并将该密码标记为过期，登陆后你需要设置一个新的密码（5.5则是用户自己设置密码）
+	
+	-3.查看密码
+	cat /var/log/mysqld.log
+	root@localhost: 后面就是初始化的密码   vf!5ziFG%?F&
+		
+3.启动和关闭MySQL服务
+	systemctl start mysqld.service
+	systemctl stop mysqld.service
+	
+	查看状态 systemctl status mysqld 
+	
+	5.5版本的是：
+		service mysql start 	
+		service mysql stop
+			
+4.首次登录，录入初始化密码，修改密码
+	mysql -uroot -p
+	输入初始密码
+	因为初始化密码默认是过期的，所以查看数据库会报错
+	ALTER USER 'root'@'localhost' IDENTIFIED BY 'new_password';
+	
+	注意新密码太简单也会报错
+		
+5.查看mysql的安装目录ps -ef|grep mysql
+		
+6.查看mysql是否自启动（默认自启动）
+	systemctl list-unit-files|grep mysqld.service
+	
+   如不是enabled可以运行如下命令设置自启动
+	systemctl enable mysqld.service
+			
+7.修改字符集问题
+	mysql在修改字符集之前使用的默认是latinl
+	5.7中，插入中文时直接会报错，5.5中则可以插入成功，但会出现乱码
+	
+	1）修改配置文件
+	vim  /etc/my.cnf
+	重新启动mysql
+	systemctl restart mysqld.service
+	查看一下状态
+	systemctl status mysqld.service
+	
+	在修改字符集之前已经建好的表，此时仍不能插入中文
+	需要修改已生成的库表字符集
+	
+	2）对于已经创建的数据库和表
+	
+	-修改数据库的字符集
+	mysql> alter database 数据库名 character set 'utf8';
+	-修改数据表的字符集
+	mysql> alter table 表名 convert to  character set 'utf8';
+	
+	3）对于已经插入的数据，只能删了重新插入
+		
+8.Mysql 的用户与权限管理
+
+	-1.首先用navicat测试远程连接失败，切换至系统数据库mysql，查看user表
+	select *from user\G;
+	可以看到关于用户的权限分配信息
+	
+	-2.select Host,User,authentication_string from user;
+		查看user表的连接类型，用户名，密码字段
+		发现没有创建远程连接的用户
+	-3.创建用户
+		create user mc identified by '123456';
+		表示创建名称为mc的用户，密码设为123456;
+	-4.再次查看用户表这三项信息
+		发现新创建的用户mc的连接类型为% 表示所有远程通过 TCP方式的连接
+	-5.新创建的用户mc可以远成连接了，但还没有分配权限
+		
+		以root用户为例
+		授予通过网络方式登录的的root用户,对所有库所有表的全部权限，密码设为123456.
+		grant all privileges on *.* to root@'%'  identified by '123456';
+
+9.MySQL的sql_mode合理设置
+	
+	mysql5.7配置了sql_modle,使得在违反group by语句原则时将会报错
+	-1.group by使用原则：select 后面只能放 函数 和group by后的字段
+	-2.查看sql_modle配置   show  variables like 'sql_mode';
+	
+		其中的ONLY_FULL_GROUP_BY是对于GROUPBY聚合操作，
+		如果在SELECT中的列,没有在GROUPBY中出现,那么这个SQL是不合法的,因为列不在GROUP BY从句中
+	
+	-3.其中的ORACLE配置使得只要在mysql上的sql语法遵循ORACLE的语法，那么在跨数据库时在ORACLE上依然可以运行
+		
+10.MySQL底层逻辑架构以及查询的具体流程
+
+	1.mysql之外的程序访问mysql数据库，与连接池进行连接
+	2.首先查询catch和buffer即查询缓存，若缓存里有命中的查询结果，那么直接返回查询缓存中的数据
+	（缓存命中的条件是两次sql语句一模一样，类似于nosql数据库,通过key-value找到结果，key就是sql语句,value就是缓存中存放的结果）
+	
+	3.若查新缓存没有命中的查询结果,那么就去老老实实执行sql命令，首先是来到sql接口（SQL Interface），由sql接口接受sql命令
+	
+	4.sql结构将sql命令传递到解析器（parser），解析器对sql命令进行验证和解析
+	
+	5.之后由优化器（Optimizer）对sql命令进行优化。在不影响sql语句执行结构的前提下对sql命令进行语句顺序的调整，生成执行计划
+	
+	6.存储引擎根据计划分类型执行sql命令
+	
+	7.sql接口将结果返回给请求程序，并将结果在查询缓存中保存一份
+	
+11.利用show profile 查看sql的执行周期
+
+	修改配置文件/etc/my.cnf
+	新增一行：query_cache_type=1
+	重启mysql 
+	
+	查看profiling的状态
+	show variables  like '%profiling%';
+	默认是关闭的
+	开启profiling  set profiling=1;
+	
+	执行show profiles;查看最近几次的查询执行计划（简要内容）
+	
+	查看具体的执行计划
+	show profile cpu,block io for query 查询编号;
+	
+	再次执行相同的sql语句，并在此查看执行计划，发现因为命中缓存，无需再打开表，时间大大缩短。
+
+12.MyISAM和InnoDB两种引擎的区别
+	
+	mysql默认引擎为InnoDB
+	
+	对比项			MyISAM				InnoDB
+	外键			不支持		 	 	 支持
+	事务			不支持		 	 	 支持
+	行表锁			 表锁			 	 行锁（可能引发死锁）	
+	缓存			缓存索引		 	 缓存索引和真实数据
+	关注点	节省资源、消耗少、简单业务	 并发写、事务、更大资源
+	默认安装		   Y				   Y
+	默认使用		   N 			       Y
+	自带系统表使用	   Y			       N
+
+	
+	表锁，即使操作一条记录也会锁住整个表，不适合高并发的操作	行锁,操作时只锁某一行，不对其它行有影响，适合高并发的操作
+	
+	只缓存索引，不缓存真实数据	不仅缓存索引还要缓存真实数据，对内存要求较高，而且内存大小对性能有决定性的影响
+	
+	Archive引擎即档案引擎，就如同档案一样可以进行插入、查看操作，不能进行修改、删除操作。
+	
+	CSV引擎
+	CSV引擎可以将普通的CSV文件作为MySQL的表来处理，但不支持索引。
+	CSV引擎可以作为一种数据交换的机制，非常有用。
+	CSV存储的数据直接可以在操作系统里，用文本编辑器，或者excel读取。
+
+	Federated引擎
+	Federated引擎是访问其他MySQL服务器的一个代理，应急可用
+	
+	
+13.如何快速向表中插入上万条数据
+	
+	
+	
+***14.索引
+	-1.帮助MySQL高效获取数据的数据结构，因此mysql索引的本质就是数据结构
+	
+	-2.Btree和B+tree
+		
+		Btree结构
+		-指引搜索方向的数据项
+		-指向下一个磁盘块的指针
+		-指向数据的指针
+		-真正的数据（存放在叶子节点中）
+	
+		Btree用到二分查找的算法
+		
+		B+tree结构
+		-指向数据项的指针
+		-向下指针
+		
+***15.mysql为什么选择B+tree
+
+1) B+树的磁盘读写代价更低 
+　　B+树的内部结点并没有指向关键字具体信息的指针。因此其内部结点相对B 树更小。如果把所有同一内部结点的关键字存放在同一盘块中，那么盘块所能容纳的关键字数量也越多。一次性读入内存中的需要查找的关键字也就越多。相对来说IO读写次数也就降低了。 
+2) B+树的查询效率更加稳定 
+　　由于非终结点并不是最终指向文件内容的结点，而只是叶子结点中关键字的索引。所以任何关键字的查找必须走一条从根结点到叶子结点的路。所有关键字查询的路径长度相同，导致每一个数据的查询效率相当。
+
+16.聚簇索引与分聚簇索引的区别
+	
+	-聚簇索引：将数据存储与索引放到了一块，找到索引也就找到了数据
+			  顺序是排好的
+    -非聚簇索引：将数据存储于索引分开结构，索引结构的叶子节点指向了数据的对应行，myisam通过key_buffer把索引先缓存到内存中，当需要访问数据时（通过索引访问数据），在内存中直接搜索索引，然后通过索引找到磁盘相应数据，这也就是为什么索引不在key buffer命中时，速度慢的原因
+
+	-聚簇索引的好处：
+    按照聚簇索引排列顺序，查询显示一定范围数据的时候，由于数据都是紧密相连，数据库不不用从多个数据块中提取数据，所以节省了大量的io操作。
+    
+	-聚簇索引的限制：
+    对于mysql数据库目前只有innodb数据引擎支持聚簇索引，而Myisam并不支持聚簇索引。
+    由于数据物理存储排序方式只能有一种，所以每个Mysql的表只能有一个聚簇索引。一般情况下就是该表的主键。
+    为了充分利用聚簇索引的聚簇的特性，所以innodb表的主键列尽量选用有序的顺序id，而不建议用无序的id，比如uuid这种。
+	
+17.索引的创建
+
+18.性能分析
+	-Explain 
+	使用EXPLAIN关键字可以模拟优化器执行SQL查询语句，从而知道MySQL是如何处理你的SQL语句的。分析你的查询语句或是表结构的性能瓶颈。
+	
+	-执行计划包含的信息字段的含义
+	主要的几个字段：
+	1）id 查询的序列id
+	2）select_type 查询类型
+	3）type 读取数据的操作类型
+	
+	
+	
+	
+
+
+19.
+	
+
+	
+	
+	
+	
+		
+		
+		
+	
+	
+	
+	
+
+		

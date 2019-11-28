@@ -1,0 +1,13 @@
+常见默认端口
+tomcat---8080
+mysql---3306
+redis---6379
+nginx---80（默认端口，可以不写）
+mycat
+	---后台管理窗口9066
+	---数据窗口8066
+zookeeper---2181
+elasticsearch---9200
+kibana---5601
+ActiveMQ--- 采用61616端口提供JMS服务
+			采用8161端口提供管理控制台服务

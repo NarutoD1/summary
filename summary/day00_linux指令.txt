@@ -1,0 +1,494 @@
+阿里云-linux登录密码：@atGuigu
+
+
+./只有在linux中指定的那六个典型的文件目录下在不用使用 
+
+一个- 后面可以跟多个参数，两个- 后面只能跟一个参数
+
+1.关机命令：shutdown或poweroff
+	shutdown:shutdown -h now  #立即关机（shutdown -h 10   #10分钟后关机）
+	poweroff：直接输入poweroff即可
+2.重启命令：shutdown或reboot
+	shutdown:shutdown -r now  #立即重新启动  （shutdown -r +10 #10分钟之后重启）
+	reboot：直接输入即可。（重新引导）
+	
+3.vi和vim编辑器：vi xxxx文件  或者vim  xxxx文件
+	默认模式
+	--	dd	删除光标当前行
+	--	dnd	删除n行
+	--	u	撤销上一步
+	--	x	删除一个字母,类似于键盘上Delete功能
+	--	X	删除一个字母，类似于键盘Backspace功能
+	--	yy	复制光标当前行
+	--	p	粘贴
+	--	dw	删除一个词
+	--	yw	复制一个词
+	--	Shift+g	移动到页尾
+	--	1+Shift+g	移动到目标行
+	--	N+shift+g	移动到第N行
+	--	Shift+6	移动到行头
+	--	Shift+4	移动到行尾
+	
+	编辑模式 	按下  i , a ,o,等字母后才能进入编辑模
+	--	i	当前光标前录入
+	--	a	当前光标后录入
+	--	o	当前光标行的下一行录入
+	--	s,S	s:删除当前字符并进入编辑 
+			S:删除整行并进入编辑
+	--	I	行首录入
+	--	A	行尾录入
+	--	O	当前光标行的上一行录入
+
+	命令模式
+	--	:w						保存
+	--	:q						退出
+	--	:!						强制执行
+	--	:%/s/old字符/new字符/g	批量替换
+	--	/要查找的词				搜索,n查找下一个，N查找上一个
+	--	:set nu 				显示行号
+	--	:set nonu 				关闭行号
+	--	noh						取消高亮显示
+
+4.文件目录管理 
+	
+	1）帮助手册
+		man
+		--help
+		
+	2）日期类     
+		date   date +%Y  只显示年份
+		cal
+		
+	3）显示当前目录 pwd
+
+	4）cd切换目录
+		cd  				.. 返回上级目录
+		cd / 或 cd /.		返回至/
+		cd或者cd ~  		返回家目录
+		cd /etc/sysconfig   通过绝对路径访问(利用tab键)
+		cd ./sysconfig      通过相对路径访问
+	
+	5）ls
+	
+		ls 	-a 			全部文件，连同隐藏的文件
+		ls	-l或者ll 	列出详细列表 
+		列表信息：<类型><权限><文件：硬连接数或目录：子目录数><所属人><所属组><大小> <建立时间> <文件名>
+	
+	6）grep
+		配合显示内容的命令，根据跟随的内容显示，该行内容
+	    例如：ls –l |grep xxx
+		
+	7）mkdir
+		-p  可以一下建好多级目录   
+		例： mkdir 目录名  mkdir /linux/ios/android -p
+	
+	8）touch
+		新建一个文件
+		例：touch  文件名
+	
+	9）rmdir
+		删除一个空目录
+		例： rmdir  dirname
+
+	10）rm
+			 移除文件或目录    					rm 文件名 
+			-rvf递归删除所有目录内容，提示		rm -rvf 文件名	
+			-rf 递归删除所有目录内容，不提示	rm -rf 文件名
+	
+	11）cp
+			cp  【要复制的文件】 【到哪里】
+			-r 递归复制整个文件夹
+			-v 显示复制过程中文件的列表
+			强制覆盖不提示的方法
+			临时方法：用\cp 
+
+	12） mv
+			mv   oldFileName   newFileName      重命名
+			mv    /temp/movefile /targetFolder  移动文件
+
+	13）cat
+			cat  文件名   查看轻量级的文本文件
+			cat  文件1  文件2   连接显示多个文件
+			cat 文件1  文件2 > 文件3 合并为新文件
+			
+	14）more
+			查看较长的文件
+			空白键 (space)：代表向下翻一页
+			Enter:代表向下翻一行
+			q:代表立刻离开 more ，不再显示该文件内容。
+			Ctrl+F 向下滚动一屏
+			Ctrl+B 返回上一屏
+
+	15） less
+			同more类似，比more功能更多。
+			[pagedown]：向下翻动一页；
+			[pageup] ：向上翻动一页；
+			/字串    ：向下搜寻『字串』的功能；
+			?字串    ：向上搜寻『字串』的功能；
+			n        ：重复前一个搜寻 (与 / 或 ? 有关！)
+			N        ：反向的重复前一个搜寻 (与 / 或 ? 有关！)
+
+	16）tail
+			从尾部开始查看，比较适合查看日志
+			-f 跟随查看
+			-n200  显示的行数，n可以省略。
+
+    17）history
+			查看历史命令
+			
+	18）echo
+			输出环境变量   例如  echo $PATH
+			在shell脚本中当system.out.print用
+
+	19）find
+			查找文件，提供了丰富的模糊搜索及条件搜索
+			find+搜索路径+参数+搜索关键字
+			按文件名：find   /home/esop   -name   “*.txt”   根据名称查找/目录下的filename.txt文件。
+
+	20）locate
+			查找文件，查询速度更快，使用更方便。
+			locate /opt/*.conf
+			运行前需要 执行updatedb来更新文件索引。
+			
+	21）软链接：也称为符号链接，类似于windows里的快捷方式，有自己的数据块，主要存放了链接其他文件的路径。
+			命令  ln –s 原文件或目录名   软链接名
+			查询：通过 ls -l  就可以查看,列表属性第1位是l,尾部会有位置指向。
+			
+			在哪个文件下创建了对应文件路径的软连接，就是在这个文件下创建了到达对应文件路径的快捷方式
+
+5.文件压缩与解压缩
+	
+	1）tar
+		压缩文件
+			tar  -zcvf   XXX.tar.gz   n1.txt   
+			-c 创建一个新归档
+			-v 显示详细信息
+			-f 指定压缩后的文件名
+			-z 通过 gzip 过滤归档
+			
+		解压缩文件(tar)
+			tar  -zxvf  XXX.tar.gz      
+			-x从归档中解出文件
+			-v 显示详细信息
+			-f 指定解压前的文件名
+			-z 通过 gzip 过滤归档
+
+	2）zip
+		压缩文件(zip)
+			zip mypackage.zip 1.txt 2.txt 
+			zip  -r pack.zip   pack/*  (递归压缩)
+		解压缩文件(zip)
+			unzip mypackage.zip  
+
+6.磁盘分区
+	
+	1）先添加新的硬盘并重启系统
+	
+	2）开始分区
+	分区命令  fdisk /dev/sdb
+	开始对/sda分区
+	-- m   显示命令列表    
+	-- p   显示磁盘       
+	-- n   新增分区
+	-- d   删除分区          
+	-- w   写入并退出分区 同 fdisk  –l
+	
+	3）格式化磁盘
+	分区命令:mkfs -t  ext4   /dev/sdb1 
+	其中ext4是分区类型
+
+	4）挂载
+	
+	--临时挂载 重启系统会失效
+		mount    设备名称  挂载目录
+		例如： mount    /dev/sdb1    /newdisk
+	
+	--永久挂载
+		1.vim /etc/fstab
+			添加 sdb1 的UUID、文件类型、挂载目标文件  
+		2.添加完成后 执行mount   –a 即刻生效
+		
+	--取消挂载
+		umount   设备名称 或者   挂载目录
+		例如：  umount   /dev/sdb1 或者 umount   /newdisk
+
+7.防火墙服务
+
+	关闭防火墙
+	systemctl stop firewalld
+
+	不自启动防火墙
+	systemctl disable firewalld
+
+	查看防火墙是否可以自启动
+	systemctl list-unit-files|grep firewalld
+
+8.进程
+	
+	ps
+	
+	综上： 
+	如果想查看进程的CPU占用率和内存占用率，可以使用aux  ps -aux
+	如果想查看进程的父进程ID可以使用ef	ps -ef
+	
+	pid
+	    每个进程都有一个pid作为唯一标识。
+		
+	kill
+		kill pid   通过唯一标识pid杀死进程
+		-9 强行杀死进程
+
+	killall
+		killall  name   通过进程名称杀死进程
+
+9.进程服务类
+	
+	systemctl (centos7)
+	
+	注册在系统中的标准化程序
+	有方便统一的管理方式（常用的方法）
+		systemctl start 服务名(xxxx.service)
+		systemctl restart 服务名(xxxx.service)
+		systemctl stop 服务名(xxxx.service)
+		systemctl reload 服务名(xxxx.service)
+		systemctl status 服务名(xxxx.service)
+		查看服务的方法 /usr/lib/systemd/system
+	查看服务的命令
+		systemctl list-unit-files
+		systemctl --type service
+	通过systemctl 命令设置自启动
+		自启动systemctl enable service_name
+		不自启动systemctl disable service_name
+
+10.netstat
+	查看系统的网络情况
+	-an  按一定顺序排列输出
+	-p  显示哪个进程在调用
+	netstat  –anp|grep  8080 查看占用8080端口的进程
+
+11.tomcat
+	启动tmocat服务  ./startup.sh
+	
+12.mysql
+
+	MySQL服务的启停
+    启动: service mysql start 	
+	停止: service mysql stop
+	
+	设置root用户的密码
+	mysqladmin -u root  password ‘123123’
+	
+	登录MySQL
+        mysql  -uroot  -p123123
+
+13.用户和用户组命令
+
+	用户：
+		新增用户:useradd  新用户名
+		设置密码: passwd  用户名
+		用户是否存在：id  用户名
+		切换用户：su  –  切换用户名
+		查看当前用户/登录用户：whoami/ who am I
+		删除用户：userdel username(不完全)，还需删除
+		在/home目录下的文件
+		在/etc/passwd下的用户
+		在/etc/group下的用户组
+		在/var/spool/mail下的邮箱文件
+		完全删除用户:  userdel -rf username
+	
+	用户组：
+		新增组:groupadd 组名 
+		删除组:groupdel 组名
+		修改用户的组：usermod  –g 用户组 用户名
+		增加用户时直接加上组：useradd  –g 用户组 用户名
+
+14.文件的权限管理
+
+	1.chmod
+		第一种方式：+ 、-、= 变更权限
+		u:所有者  g:所有组  o:其他人 
+			 a:所有人(u、g、o的总和)
+		 chmod   u=rwx,g=rx,o=x   文件目录名 
+		 chmod   o+w    文件目录名
+		 chmod   a-x    文件目录名
+		第二种方式：通过数字变更权限
+		 r=4 w=2 x=1        rwx=4+2+1=7
+		 chmod u=rwx,g=rx,o=x    文件目录名 
+		相当于 chmod   751  文件目录名
+	
+	2.chown
+		chown  newowner  file  改变文件的所有者
+		chown newowner:newgroup  file  改变用户的所有者和所有组
+		-R   如果是目录 则使其下所有子文件或目录递归生效
+
+	3.chgrp
+		chgrp newgroup file  改变文件的所有组
+
+15.上传和下载命令
+
+	1）先安装相关组件
+	   yum install -y lrzsz
+	2）上传：rz
+    3）下载：sz
+
+16.安装gcc相关编译环境  yum install gcc gcc-c++ -y
+	
+17.redis安装
+	1.tar -zxvf redis-3.2.5.tar.gz
+	2.cd redis-3.2.5
+	3.yum install gcc gcc-c++ -y
+	4.make
+	5.make install PREFIX=/usr/local/redis
+	6.cp redis.conf /usr/local/redis/bin/
+	7.cd /usr/local/redis/bin/
+	
+	创建软连接使redis-server指令为全局有效
+	8.ln -s /usr/local/software/redis-3.2.5/src/redis-server /usr/bin/redis-server
+	
+	9.启动redis ./redis-server redis.conf
+	（windows版启动 redis-server.exe redis.windows.conf）
+		protected-mode no
+		bind 127.0.0.1(注释)
+		daemonize yes
+	
+18.查看端口占用状态 netstat -nltp
+
+19.阿里云服务器上部署项目部分相关环境的安装
+		*1. JDK安装
+			
+			上传并解压到usr/local/ 下的新建目录software
+		
+			vim /etc/profile
+			
+			在文件最后加上下面三行配置
+			export JAVA_HOME=/usr/local/software/jdk1.8.0_131
+			export PATH=$JAVA_HOME/bin:$PATH
+			export CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar
+			
+			source /etc/profile 
+			
+		*2. nginx安装
+			
+			快捷安装
+			1.yum install gcc openssl openssl-devel pcre pcre-devel zlib zlib-devel -y
+			2.mkdir software
+			3.tar -zxvf nginx-1.14.2.tar.gz
+			4.cd nginx-1.14.2
+			5. ./configure --prefix=/usr/local/nginx
+			6. make
+			7. make install	
+			
+			
+			yum -y install gcc gcc-c++ autoconf libjpeg libjpeg-devel libpng libpng-devel freetype freetype-devel libxml2 libxml2-devel zlib zlib-devel glibc glibc-devel glib2 glib2-devel bzip2 bzip2-devel ncurses ncurses-devel curl curl-devel e2fsprogs e2fsprogs-devel krb5-devel libidn libidn-devel openssl openssl-devel nss_ldap openldap openldap-devel  openldap-clients openldap-servers libxslt-devel libevent-devel ntp  libtool-ltdl bison libtool vim-enhanced
+			
+			
+			本地安装
+			1.上传安装nginx所需文件共四个压缩包
+			2.依次按顺序解压、配置、编译、安装下面四个文件
+				tar -zxvf pcre-8.37.tar.gz 
+				./configure
+				make
+				make install
+				
+				tar -zxvf openssl-1.0.1t.tar.gz
+				./config
+				make
+				make install
+				
+				tar -zxvf zlib-1.2.8.tar.gz
+				./configure
+				make && make install
+				
+				tar -zxvf nginx-1.11.1.tar.gz
+				./configure 
+				make && make install
+				
+			3.启动nginx
+			cd /usr/local/nginx/sbin
+			./nginx
+			
+			4.设置nginx开机自启动,修改启动脚本（没有必要，需要时再启动，这步可以省略）
+			vim /etc/rc.d/rc.local
+			
+			5.重新加载nginx
+			cd /usr/local/nginx/sbin
+			./nginx -s reload
+			
+			6.关闭命令 在/usr/local/nginx/sbin目录下
+			执行 ./nginx -s stop 
+			
+		*3. MySQL的安装
+			1.rpm -qa|grep mariadb  查看一下mariadb  mysql的升级版
+			2.rpm -e --nodeps  mariadb-libs  删掉原有的mariadb
+			3.chmod -R 777 /tmp	修改/tmp目录的权限
+			4.rpm -ivh MySQL-client-5.5.54-1.linux2.6.x86_64.rpm 安装mysql客户端
+			5.rpm -ivh MySQL-server-5.5.54-1.linux2.6.x86_64.rpm 安装mysql服务端
+			  会报错，先安装依赖
+				yum install libaio -y
+				再安装sever
+			
+			6.检查
+				mysqladmin --version
+				rpm -qa | grep -i mysql(-i 表示忽略大小写)
+			7.MySQL服务的启停
+				启动: service mysql start 	
+				停止: service mysql stop
+			8.修改密码
+				mysql_secure_installation 
+			9.登录
+				mysql -uroot -p123
+			10.修改字符编码
+				a.拷贝my.cnf到/etc目录下
+				b.重启服务器
+					service mysql restart
+			11.权限问题使能够远程连接
+				grant all privileges on *.* to root@'%' identified by '123';
+				flush privileges;
+				
+		*4. 启动各种服务
+			java -jar scw-register-0.0.1-SNAPSHOT.jar --server.port=9999
+			java -jar scw-user-0.0.1-SNAPSHOT.jar --server.port=9005 --eureka.client.service-url.defaultZone=http://123.57.28.175:9999/eureka/ 
+
+20.mysql远程访问：mysql -uroot -p123456 -h 目标mysql数据库的主机地址 -P 3306
+
+21. 使用压力测试工具ab
+	CentOS6 默认安装
+	CentOS7需要手动安装
+
+	1、联网：yum install httpd-tools
+	2、无网络：
+	（1） 进入cd  /run/media/root/CentOS 7 x86_64/Packages（路径跟centos6不同）
+	（2） 顺序安装
+		  apr-1.4.8-3.el7.x86_64.rpm
+		  apr-util-1.5.2-6.el7.x86_64.rpm
+		  httpd-tools-2.4.6-67.el7.centos.x86_64.rpm  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

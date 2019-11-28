@@ -1,0 +1,389 @@
+JUC（java.util.concurrent）
+
+1.进程和线程的概念，举例说明
+
+	进程是程序执行的过程，是操作系统执行的基本单位
+	平时电脑上运行的一个个软件就是一个个的进程
+	
+	线程是调度的基本单位，每个线程都是相互独立的。
+	电脑上运行的程序，执行的每个小操作都是一个线程。
+	例如，网易云音乐上，一个音乐的播放是一个线程，搜索音乐是一个线程等等。
+	以及程序后台运行的功能例如word的自动备份功能，这就是一个线程。
+
+2.线程的生命周期（状态）
+
+	六个状态：
+	NEW--新建
+	RUNNABLE--运行
+	BLOCKED--阻塞
+	WAITING--一直等待直到被唤醒（不见不散）
+	TIMED_WATING--有超时时间的等待（过时不候）
+	TERMINATED--终结
+	
+	线程的生命周期可以比作人的生命历程
+	刚出生的呱呱落地的婴儿---线程创建了
+	从婴儿逐渐成长为成年人到老去这整个过程---线程在运行
+	成长期间难免会生病，生病了正常生活受到影响，需要治病--线程阻塞了、等待
+	生命结束那一刻--线程消亡
+
+3.wait/sleep的区别和相同点
+
+	wait不会抓着资源不放，资源会进入睡眠队列里，  sleep会抓着资源不放，可能会造成死锁
+	wait和sleep都是在哪睡就在哪醒
+
+4.并发和并行的区别
+
+	并发：同一时刻多个线程在访问同一个资源，多个线程对一个点  例如：双11秒杀
+	并行：在同一时间间隔内多项工作一起执行，之后再汇总例如：
+	打开网易云，先播放一个音乐听着，然后再音乐播放的同时再去搜索自己喜欢的音乐，找到了，再切换为这个音乐。
+	
+	做饭，烧水的同时，洗菜切菜
+	
+
+5.lock和synchronized的区别
+	
+	-lock比synchronized灵活，并且效率更高
+	
+	-Lock是一个接口，而synchronized是关键字。
+	
+	-synchronized会自动释放锁，而Lock必须手动释放锁。
+	
+	-Lock可以让等待锁的线程响应中断，而synchronized不会，线程会一直等待下去。
+	
+	-通过Lock可以知道线程有没有拿到锁，而synchronized不能。
+	
+	-Lock能提高多个线程读操作的效率。
+	
+	-synchronized能锁住类、方法和代码块，而Lock是块范围内的
+	
+	***使用Lock的实现类ReentrantLock（可重入锁），创建lock
+	
+6.多线程编程模板
+	
+	//1.创建需要的资源，编写操作方法
+	
+	//2.封装解耦，遵循高内聚，低耦合用实现接口的方式创建线程
+
+	//3.上锁
+	
+	//4.判断是否需要等待
+	
+	//5.具体操作
+	
+	//6.唤醒等待的线程
+	
+	//7.别忘记解锁
+	
+	//8.注意不要犯虚假唤醒的错误（多是使用Object中的wait（）时会犯错）
+		明确一点，当使用的是唤醒全部等待的线程
+        下次操作的线程不确定是哪一个。
+        再加上wait以及sleep的特点在哪里睡眠的就在那里被唤醒
+        因此使用if()判断在超过3个的多线程的情况下会出现拦不住的情况
+
+	//9.使用lock下的condition实例，调用await、signal/signalAll来代替wait、notify/notifyall
+		condition相当于解锁的钥匙
+
+7.解决集合线程不安全
+	
+	0.不安全原因
+	以ArrayList()为例，其add()方法没有synchronized
+	
+	add的时候将导致并发修改异常:java.util.ModificationException
+	但控制台报出这个错误是在读的时候才报的。
+	
+	1.使用Vector（jdk1.0的已经淘汰）
+	2.Collections.synchronizedList(new ArrayList<>());
+	Collections中的synchronizedList仍是通过同步代码块解决线程安全，
+	写问题解决了，但读却出现了问题，导致效率太低
+	3.正确的解决方式：juc写时复制技术
+		-对于list
+			CopyOnWriteArrayList()
+		-对于set
+			CopyOnWriteArraySet()
+		-对于map
+			ConcurrentHashMap()
+	4.HashSet底层是HashMap但是HashSet中对set的add操作只需传一个参数而hashmap都是kv键值对，为什么？
+	这是因为hashset底层的add方法中将value值设置为了常量，需要关注的参数就是key
+	
+8.多线程锁的问题
+	--使用synchronized时，明确静态同步方法和非静态同步方法的锁范围
+		synchronized实现同步的基础：Java中的每一个对象都可以作为锁。
+		具体表现为以下3种形式。
+		对于普通同步方法，锁是当前实例对象。
+		对于静态同步方法，锁是当前类的Class对象。
+		对于同步方法块，锁是Synchonized括号里配置的对象
+
+9.获得多线程的方法几种？
+	
+	传统的是继承thread类和实现runnable接口（函数式接口），
+	java5以后又有实现callable接口和java的线程池获得。
+	再接着展开陈述....
+	
+10.Callable接口（函数式接口）
+
+	-Callable接口与Runnable接口的区别？
+		--从实现的方法上看：
+			callable的实现方法是call(),runnable的实现方法是run()
+			callable的实现方法有返回值，runnable的实现方法五返回值
+			callable的实现方法需要抛异常，runnable的实现方法不需要抛异常
+		--从使用的方式上看：
+			在Thread的构造器参数列表中存在Runnable接口的传参入口
+			Callable接口则不能在Thread的构造器参数列表中直接替代Runnable接口参数入口使用，
+			需要一个能够将Callable和Thread关联起来的中间项（FutureTask）
+			
+	-FutureTask的原理
+		FutureTask是Runnable接口的一个实现类，其构造器中可以穿入Callable接口
+		在主线程中需要执行比较耗时的操作时，但又不想阻塞主线程时，可以把这些作业交给FutureTask对象在后台完成，当主线程将来需要时，就可以通过FutureTask对象获得后台作业的计算结果或者执行状态
+	
+		在主线程未完成时，通过get()方法获取了那部分处理耗时作业的线程，在该线程计算完成之前，主线程将会发生阻塞
+		直到分支线程任务完成时，主线程才会继续运行下去。
+		因此get()方法一定要放到最后在主线程完成时使用
+		
+		可以通过isDone()方法来判断分支线程是否计算完成，而且该计算只进行一次，一旦完成就不能再重新计算。
+		
+11.JUC主要的辅助类
+
+	-CountDownLatch（减少计数）
+		适用场景：多线程中，有一个线程被要求必须要留到最后执行时。
+		例如当网站异地登录成功后，会触发异地登录短信提示
+		
+		原理：
+		使用CountDownLatch的await方法先阻塞需要留到最后的线程；
+		通过计数器记录当前还有几个线程未完成任务，每当一个线程完成操作后，都要调用countDown()方法对计数器-1；
+		当计数器变为0时，被await方法阻塞的该线程就会开始执行自己的任务
+		
+	-CyclicBarrier（循环栅栏）
+		
+		适用场景：需要收集好指定的所有元素才能继续进行
+		
+		原理：
+		通过构造器设置拦截的线程数量，设置这组线程要完成的任务
+		设置一个类似于栅栏的屏障，将一组线程阻挡在其中，每个线程通过CyclicBarrier的await()方法进入屏障；
+		当这组线程都进入这个屏障中时，屏障再放行所有线程。
+		
+	-Semaphore（信号灯）
+	
+		适用场景:当资源有限，且每个线程占用资源的时间不太长时可以使用
+		
+		原理：
+		使用了信号量机制，信号量主要是为了控制线程互斥访问共享资源，以及限制并发的线程数量
+		Semaphore中通过acquire(),release()两个方法操作信号量
+		当一个线程调用acquire()方法后，会出现两种情况
+			-成功获取信号量，使信号量-1
+			-信号量已被其他线程占用完，等待其他线程释放信号量，直到超时
+			
+		当线程调用release()方法时，就意味着该线程将释放信号量，等待唤醒其他线程
+
+12.读写锁（ReentrantReadWriteLock）有两种锁
+
+	读锁和写锁都有可能发生死锁
+	
+	-读锁（共享锁）：
+		多个线程可以给同一行资源上读锁
+		
+		对设置了读锁的数据，在commit之前仍可以进行update操作
+		当多个线程对同一行数据设置了读锁，并且都要对这个数据进行update操作时，每个线程都要等待其他线程commit，这样就出现了a等b，b等a的情况也就是死锁。
+	
+	-写锁（独占锁）
+		每行数据只能由一个线程设置写锁
+		
+		当a线程对被b线程设置了写锁的数据有update操作，同样b线程对被a线程设置了写锁的数据有update操作，双方都在等彼此释放资源，这就导致了死锁
+		
+	在高访问量，高并发的情况下对有关联的多张表操作时容易发生死锁，mysql有处理死锁的机制，但太伤性能。要避免死锁，就要在操作时专注于一条数据、多使用索引。
+	
+	使用读写锁后，sql语句不能使用范围筛选，会出现间隙锁
+		
+	例子：工作开会，领导使用的投影仪
+
+
+13.阻塞队列(BlockingQueue)
+	
+	一个线程从队列中读取元素，当前队列如果为空的，那么该线程将会阻塞；
+	另一个线程向队列中写入元素，当前队列如果满了，那么该线程将会被阻塞。
+	
+	常用的三个实现类
+	
+	ArrayBlockingQueue：由数组结构组成的有界阻塞队列。
+	LinkedBlockingQueue：由链表结构组成的有界（但大小默认值为integer.MAX_VALUE）阻塞队列。
+	SynchronousQueue：不存储元素的阻塞队列，也即单个元素的队列。
+	
+	四类方法：
+	--会抛出异常的
+		//add()方法添加成功返回true 若队列满了，再添加会报异常java.lang.IllegalStateException: Queue full
+        //element()方法查看的是队列中的第一个元素 若队列为空，执行此方法会报异常java.util.NoSuchElementException
+        //remove()方法 执行成功后，返回删除的元素值 若队列为空，执行此方法会报异常java.util.NoSuchElementException
+	--返回特殊值的
+		//offer()方法 加入队列成功  返回true，失败返回false
+        //peek()方法 若队列中存在元素，返回第一个元素，若队列为空，则返回null
+        //poll()方法 若队列中存在元素，按出队顺序返回元素值,若队列空，则返回null
+		
+	--会一直阻塞线程的
+		/put()方法，无返回值，当队列满时，使用此方法的线程将一直阻塞直到队列有空间再继续执行或者是直接终止
+        //take()方法，当队列中存在元素时，按出队顺序返回元素值，若队列为空，使用此方法的线程将一直阻塞直到队列有元素再继续执行或者直接终止
+		
+	--会阻塞线程一段时间的，超时退出
+		//offer("a",2L,TimeUnit.SECONDS),可以设置超时时间，当添加成功时，返回true；队列满时，线程会阻塞，超过规定超时间后，队列中人没有空间时，将返回false
+        //poll(2L,TimeUnit.SECONDS),可以设置超时时间，当队列中有元素时，按出队顺序返回元素值；队列为空时，线程会阻塞，超过规定超时间后，队列中仍为空时，将返回null
+	
+14.线程池（池对象放在养老区中）
+	
+	--为什么使用线程池
+		使用线程池主要是便于管理线程。它的主要特点为：线程复用;控制最大并发数;管理线程。
+		
+		第一：降低资源消耗。通过重复利用已创建的线程降低线程创建和销毁造成的销耗。
+		第二：提高响应速度。当任务到达时，任务可以不需要等待线程创建就能立即执行。
+		第三：提高线程的可管理性。线程是稀缺资源，如果无限制的创建，不仅会销耗系统资源，还会降低系统的稳定性，使用线程池可以进行统一的分配，调优和监控。
+		
+	--线程池架构（重中之重的核心--ThreadPoolExcutor）
+		
+		Interface：  Excutor、ExcutorSeverice（ExcutorSeverice继承自Excutor）
+		Class:  Excutors、ThreadPoolExcutor（ThreadPoolExcutor继承自AbstractExcutorSeverice，二者是ExcutorSeverice的实现类，ThreadPoolExcutor类实现了创建各种线程池的方法；Excutors可以调用创建各种线程池实例的方法）
+		因此ThreadPoolExcutor是实现线程池的核心类
+		
+	--三种重要的线程池
+		
+		Executors.newFixedThreadPool(n);//一池多线程，
+		Executors.newSingleThreadExecutor();//一池一线程
+		Executors.newCachedThreadPool();//可扩展的线程池
+		
+		使用线程池：
+			
+			try {
+
+				for (int i = 1; i <=10 ; i++) {
+
+					threadPool.execute(()->{
+
+						System.out.println(Thread.currentThread().getName()+"号窗口办理业务");
+
+					});
+
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+
+				threadPool.shutdown();
+
+			}
+			
+	--线程池底层原理
+	
+		--ThreadPoolExcutor构造器的7个参数
+			--1、corePoolSize：线程池中的常驻核心线程数
+				核心线程数是惰性加载，在new线程池实例时，不会创建，在调用execute()开始执行线程时，才创建
+				
+			--2、maximumPoolSize：线程池中能够容纳同时执行的最大线程数，此值必须大于等于1
+				当任务队列也塞满时，该参数将起作用，线程池将新建线程对新来的任务进行处理
+			--3、keepAliveTime：多余的空闲线程的存活时间当前池中线程数量超过corePoolSize时，当空闲时间达到keepAliveTime时，多余线程会被销毁直到只剩下corePoolSize个线程为止
+			
+			--4、unit：keepAliveTime的单位 
+			
+			--5、workQueue：任务队列，被提交但尚未被执行的任务
+				通过阻塞队列（BlockingQueue）实现。相当于等候区
+				当核心线程数都被占用就，再提交的任务就进入队列，进行等待。
+			
+			--6、threadFactory：表示生成线程池中工作线程的线程工厂，用于创建线程，一般默认的即可
+			--7、handler：拒绝策略，表示当队列满了，并且工作线程大于等于线程池的最大线程数（maximumPoolSize）时如何来拒绝请求执行的runnable的策略
+			
+	--关于线程池架构的工作流程
+		1.创建线程池，此时线程池中的线程数为0
+		2.当调用execute()方法向线程池添加请求任务，线程池进行判断
+			-如果线程池中正在运行的线程数小于corePoolSize，那么马上创建线程执行该任务
+			-如果正在运行的线程数大于或等于corePoolSize，那么将这个任务将被放入队列；线程执行完当前任务后，从队列取出一个任务继续执行。
+			
+			-如果任务队列已经塞满，且正在运行的线程数小于maximumPoolSize，那么线程池将创建新的非核心线程执行这个新的任务
+			
+			-如果正在运行的线程数大于或等于maximumPoolSize，那么将触发线程池饱和拒绝策略。
+		3.当一个线程完场任务后，它将从任务队列中取出任务执行，若任务队列中没有任务且线程之前的任务也执行完成时，将会有线程将进入空闲状态。
+		4.当非核心线程执行完任务空闲下来时，其空闲时间如果超过规定的keepAliveTime时，线程池将销毁这些空闲的线程，知道正在运行的线程数减为corePoolSize
+		
+		
+	--开发中如何使用线程池？
+		Executors.newFixedThreadPool(n);//一池多线程，Executors.newSingleThreadExecutor();//一池一线程Executors.newCachedThreadPool();//可扩展的线程池。这三种方式都不使用。在高访问量，高并发的场景下，这三种线程池都会造成OOM
+		阿里java开发手册中也提到过：
+		FixedThreadPool和SingleThreadPool中使用的阻塞队列是LinkedBlockingQueue，默认值为integer.MAX_VALUE（21亿），如此将堆积大量请求，线程池存放在堆的养老区中，如此将会引发OOM异常
+		
+		CachedThreadPool和ScheduledThreadPool允许创建的最大线程数为integer.MAX_VALUE（21亿），可能会创建大量的线程，同样可能会造成OOM
+		
+		juc是jdk5中推出的，由于时间的缘故，出现这种局限性
+		
+		正确方式是使用ThreadPoolExcutor的方式自己手写创建线程池，自己设置每个参数。
+		
+	--拒绝策略
+		-AbortPolicy(默认)：直接抛出RejectedExecutionException异常阻止系统正常运行
+		-CallerRunsPolicy：“调用者运行”一种调节机制，该策略既不会抛弃任务，也不会抛出异常，而是将某些任务回退到调用者，从而降低新任务的流量。吞吐量最大的拒绝策略
+		
+		-DiscardOldestPolicy：抛弃队列中等待最久的任务，然后把当前任务加人队列中尝试再次提交当前任务。更关注老任务
+		
+		-DiscardPolicy：该策略默默地丢弃无法处理的任务，不予任何处理也不抛出异常。如果允许任务丢失，这是最好的一种策略。更关注新任务
+		
+			
+15.分支合并框架
+
+	Fork：把一个复杂任务进行分拆，大事化小
+	Join：把分拆任务的结果进行合并
+	
+	相关类
+	-ForkJoinPool（分支合并池）
+		与ThreadPoolExcutor相同继承自AbstractExcutorSeverice
+	
+	-ForkJoinTask（分支合并任务）
+		与FutureTask同为Future的实现类
+		
+	-RecursiveTask（递归任务）
+		继承自ForkJoinTask
+		继承该类后可以实现递归(自己调自己)调用的任务
+		
+	使用思路：
+		创建任务类比如命名为MyTask继承RecursiveTask，重写方法compute()中书写具体的递归操作。
+		递归一定要有判断的条件，防止循环递归。
+		在递归实现中，进行合理分支:task对象1.fork()，tas对象2.fork()  分几个看需求
+		最后再合并返回结果：result=task对象1.join()+task对象2.join()
+	
+		创建任务类实例，创建分支合并池实例，通过池对象调用sumit()方法，提交任务：submit(task)
+		最后类似FutureTask 用get()方法get结果
+
+16.异步回调（项目中使用的是MQ消息中间件）
+
+	CompletableFuture也是Future的实现类，类比FutureTask、ForkJoinTask
+
+	-同步
+	
+	CompletableFuture<Void> sync = CompletableFuture.runAsync(()->{
+	
+	});
+	
+
+	-异步回调
+	CompletableFuture<Integer> future = CompletableFuture.supplyAsync(()->{
+	
+	});
+	
+	//t是返回结果，u是异常信息
+	future.whenComplete((t,u)->{
+
+		System.out.println("t="+t);
+		System.out.println("u="+u);
+
+	}).get();
+	
+	
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	

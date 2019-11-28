@@ -1,0 +1,12 @@
+spring--IOC、AOP
+springmvc--springmvc和struts2的区别
+mybatis--mybatis和hibernate的区别
+springboot
+linux
+redis--redis和memcahe的区别
+nginx
+git
+分布式和集群的区别
+
+分布式：多个服务，做不同的事，完成同一个项目
+集群：所有的服务做同一件事（可能是项目的一个功能）

@@ -1,0 +1,31 @@
+nginx和redis都采用了多路io复用
+	--Redis和Memcache区别
+	 1.redis使用了持久化，Memcache则没有，所有的东西都存储在内存中
+	 2.Redis支持多种数据类型 不仅仅支持简单的k/v类型的数据，同时还提供list，set，hash等数据结构的存储。
+	 Memcache纯k-v格式
+	 3.Memcache采用多线程+锁机制，redis是单线程+多路io复用机制
+	 且多路io复用是linux支持的，windows并不支持，因此nginx要部署在linux上
+	 
+worker进程数服务器的cpu数相等是最为适宜的。 
+	 
+当客户端向访问nginx占用的连接数为：2或者4
+	1.若客户端访问的是静态资源，那么占用连接数是2
+	  
+	  客户端请求nginx服务器，与一个worker进程连接--连接1
+	  worker进程获取静态资源并返回给客户端--连接2
+	  
+	2.如客户端访问的是被nginx代理的服务器，也就是说经过了反向代理那么连接数就是4。
+	  客户请求nginx服务器的worker进程--连接1
+	  worker进程将请求传送给被代理的服务器例如tomcat--连接2
+	  被代理服务器响应返回结果给worker进程--连接3
+	  worker进程将返回结果传递给客户端--连接4
+	
+计算最大并发数
+	
+	nginx配合文件中默认的worker最大连接数为1024
+	
+	客户端访问静态资源
+	一个worker规定的最大连接数*worker进程数/2
+	
+	客户端通过反向代理访问，http作为反向代理
+	一个worker规定的最大连接数*worker进程数/4

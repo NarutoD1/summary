@@ -1,0 +1,532 @@
+ElasticSearch--（ES）
+
+1.lucene与elasticsearch
+	
+	全文搜索引擎目前主流的索引技术就是倒排索引的方式。
+	
+	倒排索引：通过一个个的单词查找记录。通过分词技术构建
+	
+	lucene只是一个提供全文搜索功能类库的核心工具包
+	elasticsearch是基于lucene实现的一个完整全文搜素引擎软件
+
+2.CentOS7安装ElasticSearch
+	-1.上传压缩包到opt目录下
+	-2.解压安装包
+		rpm -ivh elasticsearch-5.6.4.rpm
+	-3.查看ElasticSearch服务状态
+		systemctl list-unit-files|grep elasticsearch
+	-4.启动之前先为elasticsearch配置jdk
+		vim /etc/sysconfig/elasticsearch
+		将自己配置好的JAVA_HOME参数写进去
+		JAVA_HOME=/usr/local/software/jdk1.8.0_131
+	-5.将elasticsearch改为开机自启动
+		systemctl enable elasticsearch
+	-6.启动elasticsearch
+		service elasticsearch start
+		
+3.修改elasticsearch的相关配置文件
+	-1.修改yml配置文件（注意：每行必须顶格，不能有空格“：”后面必须有一个空格）
+		-集群名称，同一集群名称必须相同
+			cluster.name: my-es
+		-单个节点名称 
+			node.name: node-1
+		-网络部分  改为当前的ip地址  ，端口号保持默认9200就行
+			network.host: 192.168.56.130
+		-把bootstrap自检程序关掉
+			bootstrap.memory_lock: false
+			bootstrap.system_call_filter: false
+		-自发现配置：新节点向集群报到的主机名
+			discovery.zen.ping.unicast.hosts: ["mc"]
+			
+	-2.因为elasticsearch默认占用jvm 2g内存，影响整个机器性能。因此要修改默认设置
+		修改jvm.options文件 vim /etc/elasticsearch/jvm.options
+			修改参数
+				-Xmx=512m
+				-Xms=512m
+
+4.修改linux相关配置（针对CentOS7）
+	-1.为什么要修改linux配置？
+		默认elasticsearch是单机访问模式，就是只能自己访问自己。
+		但是我们之后一定会设置成允许应用服务器通过网络方式访问。这时，elasticsearch就会因为嫌弃单机版的低端默认配置而报错，甚至无法启动。
+		
+		所以我们在这里就要把服务器的一些限制打开，能支持更多并发。
+		
+	-2.修改
+		vim /etc/security/limits.conf
+		添加内容：
+		* soft nofile 65536
+		* hard nofile 131072
+		* soft nproc 2048
+		* hard nproc 65536
+		修改完成后重新引导linux启动  reboot
+
+5.测试elasticsearch是否安装成功
+	curl http://192.168.56.130:9200
+	安装成功输入该指令，系统将返回封装了elasticsearch节点信息的json串
+	浏览器访问http://192.168.56.130:9200
+
+6.安装kibana（实际开发中kibana是不会和ElasticSearch放在同一台机器上）
+	-1.上传kibana压缩包到opt目录下
+	-2.解压：
+		tar -zxvf kibana-5.6.4-linux-x86_64.tar.gz
+	-3.kibana解压即可用
+	-4.进入kibana的config目录下修改配置文件kibana.yml
+		vim kibana.yml
+		
+		修改内容：
+		server.host: "192.168.56.130"
+		elasticsearch.url: "http://192.168.56.130:9200"
+	-5.进入kibana的目录启动kibana
+		./kibana
+		
+	-6.测试
+		--1.ps -ef 查看kibana进程   
+		root       2589   2365  5 13:06 pts/1    00:00:05 ./../node/bin/node --no-warnings ./../src/cli
+		--2.浏览器访问
+		http://192.168.56.130:5601/ 可以进入kibana操作页面
+		进入Dev Tools  运行get _cluster/health
+			右边的结果中，status为yellow或者green。
+			表示es启动正常，并且与kibana连接正常。
+
+7.elasticsearch基本概念（几个关键词）
+	-cluster（集群）：elasticsearch默认就是集群的状态。整个集群是一份完整、互备的数据。
+	-node：集群中的一个节点，一般只一个进程就是一个node
+	-shard：分片，即使是一个节点中的数据也会通过hash算法，分成多个片存放，默认是5片。
+	-index：相当于关系型数据库。对于用户来说是一个逻辑数据库，虽然物理上会被分多个shard存放，也可能存放在多个node中。就是一个索引库。物理上就是多个分片。
+	
+	-type：可以类比为数据库中的表，或者更像是一个class，而数据在这里以json的格式存放
+	
+	-document：相当于一行数据
+	
+	-field：相当于字段、属性
+
+8.dsl语句(基本形式是：json串)类比SQL语句
+
+	--json语法回顾
+		var jsons = {
+			"key1":"abc", // 字符串类型
+			"key2":1234,  // Number
+			"key3":[1234,"21341","53"], // 数组
+			"key4":{                    // json类型
+					"key4_1" : 12,
+					"key4_2" : "kkk"
+					},
+			"key5":[{                  // json数组
+					 "key5_1_1" : 12,
+					 "key5_1_2" : "abc"
+					},
+					{
+					 "key5_2_1" : 41,
+					 "key5_2_2" : "bbj"
+					}]
+		};
+	
+	--1.查看es中有哪些索引
+		GET /_cat/indices?v
+	--2.增加一个索引（索引命名类比数据库命名）
+		PUT /索引名  eg：PUT /movie_index
+	--3.删除一个索引
+		DELETE /索引名 （类比git、svn同是逻辑上的删除）
+	--4.新增文档（类比数据库插入一条数据）
+		PUT /index/type/id	
+		{
+			json串形式的数据
+		}
+		
+		如果之前没建过index或者type，es 会自动创建。
+		
+	--5.直接用id查找信息
+		eg：GET movie_index/movie/1
+		
+	--6.修改
+		—--1.整体替换，和新增没有区别
+			PUT /movie_index/movie/3
+			{
+			  "id":"3",
+			  "name":"incident red sea",
+			  "doubanScore":"5.0",
+			  "actorList":[{"id":"1","name":"zhang chen"}]
+			}
+		---2.修改—某个字段（关键字POST、_update、doc）
+			
+			POST movie_index/movie/3/_update
+			{ 
+			  "doc": {
+				"doubanScore":"7.0"
+			  } 
+			}
+	--7.删除一个document（）
+		DELETE movie_index/movie/3
+		
+	--8.搜索type全部数据（关键字：_search）
+		GET movie_index/movie/_search
+		
+	--9.按条件查询(全部)（关键词：_search、query、match_all）
+		GET movie_index/movie/_search
+		{
+		  "query":{
+			"match_all": {}
+		  }
+		}
+		
+	--10.按分词查询（关键词：_search、query、match）
+		GET movie_index/movie/_search
+		{
+		  "query":{
+			"match": {"name":"red"}
+		  }
+		}
+		
+		分词查询通过分数_score的值从大到小排列符合的结果过，分数最高的即为最匹配的
+
+	--11.按分词子属性查询（filed.subfiled）
+		GET movie_index/movie/_search
+		{
+		  "query":{
+			"match": {"actorList.name":"zhang"}
+		  }
+		}
+		
+	--12.按短语查询，不再利用分词技术，直接用短语在原始数据中匹配(关键词：match_phrase)
+		GET movie_index/movie/_search
+		{
+			"query":{
+			  "match_phrase": {"name":"operation red"}
+			}
+		}
+		
+	--13.关键字查询，将短语当一个关键字，也是不用分词（关键字：filed.keyword）
+		GET movie_index/movie/_search
+		{
+		  
+		  "query": {
+			
+			"match": {
+			  "name.keyword": "operation red sea"
+			}
+			  
+			}
+
+		}
+		
+	--14.校正匹配分词查询，当一个单词都无法准确匹配，es通过一种算法对非常接近的单词也给与一定的评分，能够查询出来，但是消耗更多的性能。（关键字：fuzzy）
+		GET movie_index/movie/_search
+		{
+			"query":{
+			  "fuzzy": {"name":"rad"}
+			}
+		}
+		
+	--15.过滤--查询（查询前过滤，提升效率，查询后过滤不可以不用考虑）（关键字：bool，filter，term，must，match）
+		GET movie_index/movie/_search
+		{ 
+			"query":{
+				"bool":{
+				  "filter":[ {"term": {  "actorList.id": "1"  }},
+							 {"term": {  "actorList.id": "3"  }}
+				   ], 
+				   "must":{"match":{"name":"red"}} //must相当于sql中and
+				 }
+			}
+		}
+	
+	--16.过滤--按范围过滤(关键词：range)
+		GET movie_index/movie/_search
+		{
+		   "query": {
+			 "bool": {
+			   "filter": {
+				 "range": {
+					"doubanScore": {"gte": 8}
+				 }
+			   }
+			 }
+		   }
+		}
+		
+		
+		关于范围操作符：
+		gt--大于
+		it--小于
+		gte--大于等于
+		ite--小于等于
+		
+	--17.排序（关键字：sort）
+		GET movie_index/movie/_search
+		{
+		  "query":{
+			"match": {"name":"red sea"}
+		  }
+		  , "sort": [
+			{
+			  "doubanScore": {
+				"order": "desc"
+			  }
+			}
+		  ]
+		}
+
+	--18.分页查询（关键字：from，size）
+		GET movie_index/movie/_search
+		{
+		  "query": { "match_all": {} },
+		  "from": 1,
+		  "size": 1
+		}
+		
+		注意：from表示第几条数据，相当于索引，从0开始，0表示第一条数据
+			  size表示每页有几条数据
+			  表示上一页from的值是：from-size；
+			  表示下一页from的值是：from+size
+	
+	--19.指定查询的字段
+		GET movie_index/movie/_search（关键字：_source）
+		{
+		  "query": { "match_all": {} },
+		  "_source": ["name", "doubanScore"]
+		}
+
+	--20.高亮（关键字：highlight,fields）
+		GET movie_index/movie/_search
+		{
+			"query":{
+			  "match": {"name":"red sea"}
+			},
+			"highlight": {
+			  "fields": {"name":{} }
+			}
+			
+		}
+		
+		自定义标签（关键字：pre_tags,post_tags）
+		GET movie_index/movie/_search
+		{
+			"query":{
+			  "match": {"name":"red sea"}
+			},
+			"highlight": {
+			  "pre_tags": ["<b>"], 
+			  "post_tags": ["</b>"], 
+			  "fields": {"name":{} }
+			}
+			
+		}
+		
+	--21.聚合（关键字：aggs）（用的很少，效率低）
+		
+		大致使用流程：
+		（aggs--定义规则）-->（定义规则名，必须唯一不能重名）
+			-->（指定聚合类型）-->（指定字段名）
+	
+		GET movie_index/movie/_search
+		{ 
+		  "aggs": {
+			"groupby_actor": {
+			  "terms": {
+				"field": "actorList.name.keyword"  
+			  }
+			} 
+		  }
+		}
+		
+		GET movie_index/movie/_search
+		{ 
+		  "aggs": {
+			"groupby_actor_id": {
+			  "terms": {
+				"field": "actorList.name.keyword" ,
+				"order": {
+				  "avg_score": "desc"
+				  }
+			  },
+			  "aggs": {
+				"avg_score":{
+				  "avg": {
+					"field": "doubanScore" 
+				  }
+				}
+			   }
+			} 
+		  }
+		}
+
+9.关于es中的mapping
+	es中的mapping就是为type中的filed定义字段类型，es能够自动为用户定义的type推断匹配数据类型。
+	其中数据类型为：text的字段可以进行分词，text类型的字段中都有子属性keyword，其字段类型就是keyword。因此text类型的字段可以使用:属性名.keyword
+
+	涉及到中文分词时，因为需要给字段指明中文字库，所以必须自定义mapping。
+
+10.安装中文分词器ik
+	-1.上传中文词库压缩包到/opt下
+	-2.拷贝该压缩包到 /usr/share/elasticsearch/plugins下
+		cp elasticsearch-analysis-ik-5.6.4.zip /usr/share/elasticsearch/plugins
+	-3.解压缩 
+		unzip elasticsearch-analysis-ik-5.6.4.zip
+	-4.记得删除压缩包，不然重启es会失败
+		rm -f elasticsearch-analysis-ik-5.6.4.zip
+	-5.重启es
+		systemctl restart elasticsearch.service
+	-6.在kibana上进行中文分词测试
+		注意指定ik字库，ik有两种词库：ik_smart、ik_max_word
+		
+		GET movie_index/_analyze
+		{  "analyzer": "ik_smart", 
+		  "text": "我是中国人"
+		}
+
+		GET movie_index/_analyze
+		{  "analyzer": "ik_max_word", 
+		  "text": "我是中国人"
+		}
+
+11.基于中文分词搭建索引
+
+	-1.创建type的数据类型表结构mapping
+	
+		索引库不能重复，先创建一个新的索引库
+		
+		PUT movie_chn
+		{
+		  "mappings": {
+			"movie_type_chn":{
+			  "properties": {
+				"id":{
+				  "type": "long"
+				},
+				"name":{
+				  "type": "text"
+				  , "analyzer": "ik_smart"
+				},
+				"doubanScore":{
+				  "type": "double"
+				},
+				"actorList":{
+				  "properties": {
+					"id":{
+					  "type":"long"
+					},
+					"name":{
+					  "type":"keyword"
+					}
+				  }
+				}
+			  }
+			}
+		  }
+		}
+
+	-2.插入数据
+		
+		PUT /movie_chn/movie_type_chn/1
+		{ "id":1,
+		  "name":"红海行动",
+		  "doubanScore":8.5,
+		  "actorList":[  
+		  {"id":1,"name":"张译"},
+		  {"id":2,"name":"海清"},
+		  {"id":3,"name":"张涵予"}
+		 ]
+		}
+		PUT /movie_chn/movie_type_chn/2
+		{
+		  "id":2,
+		  "name":"湄公河行动",
+		  "doubanScore":8.0,
+		  "actorList":[  
+		{"id":3,"name":"张涵予"}
+		]
+		}
+
+		PUT /movie_chn/movie_type_chn/3
+		{
+		  "id":3,
+		  "name":"红海事件",
+		  "doubanScore":5.0,
+		  "actorList":[  
+		{"id":4,"name":"张晨"}
+		]
+		}
+
+	-3.查询测试
+	
+		GET /movie_chn/movie_type_chn/_search
+		{
+		  "query": {
+			"match": {
+			  "name": "红海战役"
+			}
+		  }
+		}
+
+		GET /movie_chn/movie_type_chn/_search
+		{
+		  "query": {
+			"term": {
+			  "actorList.name": "张译"
+			}
+		  }
+		}
+
+12.关于中文热词和中文敏感词以及中文专有名词的处理
+	
+	引入自定义词库
+	修改/usr/share/elasticsearch/plugins/ik/config/中的IKAnalyzer.cfg.xml
+	
+	内容如下：
+	<?xml version="1.0" encoding="UTF-8"?>
+	<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+	<properties>
+			<comment>IK Analyzer 扩展配置</comment>
+			<!--用户可以在这里配置自己的扩展字典 -->
+			<entry key="ext_dict"></entry>
+			 <!--用户可以在这里配置自己的扩展停止词字典-->
+			<entry key="ext_stopwords"></entry>
+			<!--用户可以在这里配置远程扩展字典 -->
+			 <entry key="remote_ext_dict">http://192.168.67.163/fenci/myword.txt</entry>
+			<!--用户可以在这里配置远程扩展停止词字典-->
+			<!-- <entry key="remote_ext_stopwords">words_location</entry> -->
+	</properties>
+
+	（****）关于远程扩展词典：
+	这里要用到nginx，因为nginx有动静分离这一打功能，而扩展词典就正好是一种静态资源
+	为此需要在nginx的根目下创建关于自定义词库的文件夹，这创建如下
+	
+	-1.cd /usr/local/nginx
+	-2.mkdir es/fenci/ -p
+	-3.创建.txt文件myword.txt作为词库  录入热词，专有名词
+	
+	-4.配置nginx的配置文件
+	vim nginx.conf
+	
+	不修改员原有server，添加一下新的server，内容如下：
+	
+	server {
+        listen  80;
+        server_name  192.168.56.130;
+		（nginx回顾,静态资源的普通匹配,只有以~符号开头的是正则匹配）
+		（这里匹配的含义为，在nginx根目下的es下的fenci目录下）
+        location /fenci/ {
+           root es;
+        }
+    }
+	
+	-5.重启nginx
+	./nginx -s reload
+	-6.火狐浏览器访问测试nginx的静态资源是否能正常访问
+	可能会出现乱码，43版本的火狐选择左上方菜单栏--》查看--》文字编码--》改为Unicode
+	
+	-7.修改中文分词功能包：elasticsearch下的IKAnalyzer.cfg.xml文件
+	路径为：/usr/share/elasticsearch/plugins/elasticsearch/config/
+	在远程扩展字典位置添加内容：
+	http://192.168.56.130/fenci/myword.txt
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+

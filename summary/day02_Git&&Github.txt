@@ -1,0 +1,170 @@
+git--分布式版本控制系统
+
+git的结构
+	工作区：电脑的本地磁盘
+	暂存区：git add 文件名 该指令添加的文件暂时存放的地方
+			一般是.git文件夹下的index文件，因此也叫作索引
+			
+	本地库：git init 创建的本地版本库.git目录
+
+
+git常用指令
+	1.基于linux的基本命令
+		清屏：ctrl+L
+		新建文件： vim 文件名
+		vim 三种模式下的指令
+		
+	2.创建版本库 
+		在要创建版本库的位置下打开git bash命令行
+		git init
+		
+	3.提交文件（最好一个一个提交，且提交前要考虑好）
+		-新建文件： vim 文件名
+		-查看文件状态： git status 文件名
+		-将文件添加到暂存区：git add 文件名
+		-编写注释并提交文件：git commit -m"注释内容"
+		相当于以下两步：
+			-提交文件到本地库：git commit
+			-编写注释，完成提交
+
+	4.查看文件提交记录
+		-查看历史记录 git log 文件名（也可不加文件名）输入q退出
+		-查看简易信息 git log --pretty=oneline 文件名（也可不加文件名）
+
+	5.回退历史（硬回退）
+		-回退到上一次提交 git reset --hard HEAD^
+		-回退n次操作 git reset --hard HEAD~n
+		
+	6.版本穿越
+		-行查看历史记录的版本号 git reflog 文件名
+		-回到最近的版本 git reset --hard 版本号
+
+	7.还原文件（用稳定版本替代未完成版本）
+		-git checkout -- 文件名
+		
+	8.删除某个文件（只是逻辑删除，即改变了指针的位置，仍可通过版本穿越恢复该文件）
+		--先删除文件 rm -rf 文件名
+		--再添加 git add 文件名
+		--在提交 git commit -m"注释内容"
+		
+	***分支（怎么创建分支？
+			怎么将新创建的分支合并到主线分支？
+			合并时出现冲突怎么解决？）
+		
+		1.创建分支
+			-git branch 分支名
+			-查看分支 git branch -v
+		
+		2.切换分支
+			-git checkout 分支名
+			**-创建分支和切换分支一步完成
+			** git checkout -b 分支名
+		
+		3.合并分支
+			-先切换回主干 git checkout master
+			-合并 git merge 分支名
+			
+		4.删除分支
+			-先切换到主干 git checkout master
+			-删除 git branch -D 分支名
+		
+		5.当不同的分支都在修改同一个文件的同一个地方，那么在合并时将会出现mergeing状态，即表明合并还没完成（程序合并时发生冲突系统会提示CONFLICT关键字，命令行后会进入MERGING状态，表示此时是解决冲突的状态。）
+			
+			解决冲突思路：
+			1）以找到发生冲突的文件及冲突的内容 
+				git diff
+			2）再次修改发生冲突的位置
+		
+github		
+	
+	1.GitHub是一个Git项目托管网站,主要提供基于Git的版本托管服务
+	
+
+	2.github实操
+		1）搭建代码库
+			-git init
+			-git config user.name "配置一个用户名"
+			-git config user.email "github注册的邮箱"
+		2）提交代码
+			-git add xxx
+			-git commit -m"注释内容"
+		3）github准备工作
+			-注册github账号
+			-创建github项目
+			-拿到https的url
+		4）将代码推送到远端的github上
+			-创建连接github的https链接变量
+			git  remote add origin <https:url>（变量名一般都命名为origin）
+			-向github推送
+			git push origin 分支名
+		
+		<!-- 进入到公司后要经常进行的操作  -->
+		5）切换到另外一个角色将github上的项目url复制过来
+			git clone <url> <新项目名称>
+		
+		6）对clone过来的项目进行自己负责的模块的开发修改
+		
+		7）设置name和config
+			-git config user.name "配置一个用户名"
+			-git config user.email "github注册的邮箱"
+			
+		8）开发完成后进行add和commit
+		9）将commit后的项目提交到云端（上传之前该项目的发起者需要在github上邀请该合作者加入该项目）
+			git push origin 分支名
+			
+		10）发起者这边将合作者上传的最新项目下载到本地
+		    git pull origin 分支名
+			
+	3.冲突解决
+		发生冲突原因：不同的开发者都在修改同一个文件的同一个地方
+		解决冲突思路：
+		1）更新版本 git pull origin 分支名
+			进入mergeing状态
+		2）查看冲突位置和冲突内容 git diff
+		3）修改冲突的内容（在实际工作当中应该先和同事商量，商量好解决方案后在进行删除修改操作）
+			
+		4）git add 文件名
+		   git commit -m"注释内容"
+		   
+		5)git push origin 分支名
+		
+	4.fork 在项目的源站复制一份到自己的github项目上，在自己的github上对项目进行修改
+	5.pull request 申请合并自己的项目
+		
+免密登录-ssh
+	1.ssh模式比https模式的一个重要好处就是，每次push、pull、fetch等操作时，不用重复填写遍用户名密码。
+	
+	2.使用ssh的前提是你必须是这个项目的拥有者或者合作者，且配好了ssh key。
+		
+	3.首先进入到当前系统用户的目录下检查是否已经有.ssh文件夹，若有，测删除原有的.ssh文件夹
+	因为一台机器只能生成一次成对儿的秘钥，删除才能重新生成
+		
+	4.通过rsa（非对称加密）生成指定github账号的公钥和私钥
+	ssh-keygen -t rsa -C 834661332@qq.com
+		
+	5.进入.ssh文件下 查看并复制生成的公钥
+	cd .ssh
+	ll
+	cat id_rsa.pub
+	
+	6.登录对应账号的github，在账户设置当中把新建ssh将复制的公钥粘贴进去完成ssh的创建
+	
+	7.赋值github上ssh访问方式的路径
+	
+	8.在本地对应仓库中使用git命令行中设置新的变量originssh
+	git remote add originssh git@github.com:NarutoD1/test.git
+	
+	9.记得将版本更新到最新
+	git pull origin master
+	
+	10.修改项目并add commit
+	git add 文件名
+	git commit -m"注释内容"
+	
+	11.提交项目到github
+	git push originssh master（此时就不用了在输入账号和密码了）
+	
+	https://windyzj.github.io/try_git/	
+		
+		
+		

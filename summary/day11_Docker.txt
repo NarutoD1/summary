@@ -1,0 +1,217 @@
+Docker
+
+1.Docker是什么
+解决了运行环境和配置问题软件容器，方便做持续集成并有助于整体发布的容器虚拟化技术。
+
+2.Docker能干嘛
+
+	DevOps(开发自运维)，减少开发人员和运维人员的交流的麻烦
+	
+	一次构建，随处运行
+		-更快速的应用交付和部署
+		-更便捷的升级和扩缩容
+		-更简单的系统运维
+		-更高效的计算资源利用
+		
+3.Docker的架构
+	-镜像（image）
+		一个只读的模板。镜像可以用来创建 Docker容器，一个镜像可以创建很多个容器实例。
+	
+	-容器（container）
+		容器是用镜像创建的运行实例。可以被启动、开始、停止、删除。每个容器都是相互隔离的、保证安全的平台。
+		
+		结构类似于洋葱，一层一层的。每一层负责不同的运行环境，分工明确
+		
+	-仓库（repository）
+		仓库是集中存放镜像文件的场所。
+		仓库(Repository)和仓库注册服务器（Registry）是有区别的。仓库注册服务器上往往存放着多个仓库，每个仓库中又包含了多个镜像，每个镜像有不同的标签（tag）。
+	
+4.CentOS7.0上安装docker
+	-0.sudo 暂时用root用户权限，用于真是开环境，在运维人员赋予自己暂时使用root用户
+	出处：（见官方安装教程中https://docs.docker.com/install/linux/docker-ce/centos/）
+	
+	-1.在线下载安装，确保linux系统可以上网
+	-2.确认是否有gcc gcc-c++
+	-3.如果有旧版本，想卸载用：yum -y remove docker docker-common docker-selinux docker-engine
+	-4.安装需要的软件包
+		yum install -y yum-utils device-mapper-persistent-data lvm2
+	-5.设置stable镜像仓库（官方的镜像仓库由于伟大的墙无法访问，使用国内阿里云镜像）
+		yum-config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+	-6.更新yum软件包索引：yum makecache fast
+	-7.安装DOCKER-CE：yum -y install docker-ce
+	-8.验证安装是否成功;
+		docker version
+	-9.启动docker
+		systemctl start docker
+	-10.查看是否启动
+		systemctl status docker/ps -ef|grep docker
+	
+5.关于卸载
+	-1.systemctl stop docker 
+	-2.yum -y remove docker-ce
+	-3.rm -rf /var/lib/docker
+	
+6.测试docker
+	-1.运行hello world
+	docker run hello-world
+	
+	最开始是没有hello-world镜像的。docker将自动执行docker pull hello-world 从镜像仓库下载该镜像。也可以看出网络是使用docker的硬伤。
+	
+	-2.设置镜像加速
+	好处是可以使从镜像仓库下载镜像的速度有一些提升。
+		--1.获得加速器地址连接
+			这里使用阿里云的镜像加速器；登录阿里云，从镜像服务中获取自己的镜像加速器配置信息。
+			这里使用CentOS7就将关于CentOS的JSON配置信息复制下来
+		--2.mkdir -p /etc/docker
+		--3.vim  /etc/docker/daemon.json  将复制好的JSON配置拷贝到该配置文件中。
+		--4.systemctl daemon-reload  重新加载守护进程（后台程序）
+		--5.systemctl restart docker 重启docker服务
+
+7.docker底层原理
+	-docker工作原理
+		运用的与redis、zookeeper一样还是CS模式，server端运行docker服务（守护进程），client端访问server端主机，守护进程接收client端的命令，管理主机上的容器。
+		
+	-docker为什么比vm运行快
+		--在docker管理的容器中运行的程序，使用的是宿主机器的资源，也就是实际物理上的硬件资源，而不是像vm使用的是虚拟硬件。
+		--docker使用的是宿主机的内核，不需要在单独再安装一个操作系统，和宿主机共用一个操作系统。
+		
+8.docker常用命令(类比git命令记忆)
+	-帮助命令
+		docker version
+		docker info
+		docker help
+		
+	-镜像命令（切记镜像回一个只读模板，不能修改）
+	
+		1.docker images  列出本地主机上的镜像
+		各个参数含义：
+			REPOSITORY：表示镜像的仓库源
+			TAG：镜像的标签
+			IMAGE ID：镜像ID
+			CREATED：镜像创建时间
+			SIZE：镜像大小
+		
+			--加参数:（一个- 后面可以跟多个参数，两个- 后面只能跟一个参数）
+				-a :列出本地所有的镜像（含中间映像层）
+				-q :只显示镜像ID。
+					-qa：本地所有镜像的id
+				--digests :显示镜像的摘要信息
+				--no-trunc :显示完整的镜像信息（较--digests少了一个镜像创建时间）
+				
+		2.搜索指定镜像
+		docker search 某个XXX镜像名字（是从官网上搜索https://hub.docker.com）
+			携带参数说明：
+			--no-trunc : 显示完整的镜像描述
+			-s : 列出收藏数不小于指定值的镜像。（***）
+			--automated : 只列出 automated build类型的镜像。
+			
+		3.下载镜像
+		docker pull 某个XXX镜像名字
+		
+		4.删除镜像
+		docker rmi 某个XXX镜像名字ID
+			强制删除：
+			docker rmi  -f 镜像ID
+			docker rmi -f 镜像名1 镜像名2 
+			docker rmi -f $(docker images -qa)
+	
+	-容器命令（明确：有镜像，才能创建对应的容器）
+		
+		1.新建并启动容器
+		docker run [OPTIONS] 镜像名
+			OPTIONS说明：
+				--name="容器新名字": 为容器指定一个名称；
+				-d: 后台运行容器，并返回容器ID，也即启动守护式容器；
+					
+					***注意：以docker run -d centos为例，以后台形式启动了centos的容器，
+							 但在查看所有容器时，发现容器却停止了运行。
+							 这是因为，Docker容器后台运行,就必须有一个前台进程.容器运行的命令如果不是那些一直挂起的命令（比如运行top，tail），就是会自动退出的。这是docker节省资源的一种机制
+							 最好的方式还是前台启动，如果非要后台启动，可以通过shell脚本，在前台启动一个死循环的进程输出日志：docker run -d centos /bin/sh -c "while true;do echo hello zzyy;sleep 2;done"
+					
+				-i：以交互模式运行容器，通常与 -t 同时使用；
+				-t：为容器重新分配一个伪输入终端，通常与 -i 同时使用；
+					-it：以伪终端形式加交互模式运行容器
+					
+					例如：docker run -it centos   启动交互式容器 在容器中运行centos，并以为终端形式访问centos  
+					
+				-P: 随机端口映射；
+				-p: 指定端口映射，有以下四种格式  containerPort(容器端口)
+				  ip:hostPort:containerPort
+				  ip::containerPort
+				  hostPort:containerPort（一般用这种）
+				  containerPort
+		
+		2.列出当前所有正在运行的容器
+		docker ps [OPTIONS]
+			OPTIONS说明:
+				-a：列出当前所有正在运行的容器+历史上运行过的
+				-l :显示最近创建的容器。
+				-n：显示最近n个创建的容器。   docker ps -n 3
+				-q :静默模式，只显示容器编号。
+					-qa 显示所有容器ID
+				--no-trunc :不截断输出（很少用）
+		
+		3.退出容器
+			exit：容器停止退出
+			ctrl+P+Q：容器不停止退出
+			
+		4.启动容器：docker start 容器ID或者容器名
+		5.重启容器：docker restart 容器ID或者容器名
+		
+		6.停止容器：docker stop 容器ID或者容器名	
+		7.强制停止容器：docker kill 容器ID或者容器名
+		
+		强制停止较停止会稍微快一些
+		
+		8.删除已停止的容器
+		docker rm 容器ID
+			删除多个容器：
+				1.docker rm -f $(docker ps -a -q)
+				2.docker ps -a -q | xargs docker rm
+				
+		9.查看容器日志（测试结合第一项，后台运行的注意）
+		docker logs -f -t --tail 容器ID
+			参数说明：
+				-f：跟随最新的日志打印
+				-t：加入时间戳
+				--tail 数字：显示最后多少条
+		
+		10.查看容器内运行的进程 docker top 容器ID
+		11.进入正在运行的容器并以命令行交互
+			-1.docker exec -it 容器ID linux命令
+				不进入容器，直接返回结果
+			-2.docker attach 容器ID
+				进入容器
+				
+			两种方式的区别：
+			exec 是在容器中打开新的终端，并且可以启动新的进程
+			attach：直接进入容器启动命令的终端，不会启动新的进程
+			
+9.练习：
+创建容器启动tomcat
+docker run -it -p 8888:8080 tomcat 
+docker run -d -P tomcat(后台启动，该容器没有被停止，因为tomcat有前台进程存在，即"catalina.sh run")
+
+将web小demo打成war包，添加到docker的tomcat容器中并运行
+	-1.在usr/local 新建文件夹 存放提前大号的项目war包
+	mkdir dockerdemo
+	-2.将war包通过docker cp 拷贝到docker管理的tomcat容器下的webapps目录下
+	docker cp dockerdemo.war 4468adc25b72:/usr/local/tomcat/webapps 
+	-3.启动tomcat容器
+	docker statr 容器ID
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
